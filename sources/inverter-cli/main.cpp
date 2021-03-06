@@ -71,6 +71,8 @@ void getSettingsFile(string filename) {
         string fileline, linepart1, linepart2;
         ifstream infile;
         infile.open(filename);
+        if(debugFlag)
+            printf("INVERTER: filename: %s\n", filename.c_str());
 
         while(!infile.eof()) {
             getline(infile, fileline);
@@ -82,7 +84,11 @@ void getSettingsFile(string filename) {
                 linepart2 = fileline.substr(delimiter+1, string::npos - delimiter);
 
                 if(linepart1 == "device")
+                {
                     devicename = linepart2;
+                    if(debugFlag)
+                        printf("INVERTER: devicename: %s\n", devicename.c_str());
+                }
                 else if(linepart1 == "run_interval")
                     attemptAddSetting(&runinterval, linepart2);
                 else if(linepart1 == "amperage_factor")
@@ -192,9 +198,13 @@ int main(int argc, char* argv[]) {
         ups->runMultiThread();
     }
 
+    if(debugFlag)
+        printf("INVERTER: Listening for changes\n");
     while (true) {
         if (ups_status_changed) {
             int mode = ups->GetMode();
+            if (debugFlag)
+                printf("INVERTER: GetMode:%d\n", mode);
 
             if (mode)
                 lprintf("INVERTER: Mode Currently set to: %d", mode);
@@ -216,6 +226,9 @@ int main(int argc, char* argv[]) {
             if (reply1 && reply2 && warnings) {
 
                 // Parse and display values
+                if (debugFlag) {
+                    printf("INVERTER: reply1: %s\n", reply1->c_str());
+                }
                 sscanf(reply1->c_str(), "%f %f %f %f %d %d %d %d %f %d %d %d %f %f %f %d %s", &voltage_grid, &freq_grid, &voltage_out, &freq_out, &load_va, &load_watt, &load_percent, &voltage_bus, &voltage_batt, &batt_charge_current, &batt_capacity, &temp_heatsink, &pv_input_current, &pv_input_voltage, &scc_voltage, &batt_discharge_current, &device_status);
                 sscanf(reply2->c_str(), "%f %f %f %f %f %d %d %f %f %f %f %f %d %d %d %d %d %d - %d %d %d %f", &grid_voltage_rating, &grid_current_rating, &out_voltage_rating, &out_freq_rating, &out_current_rating, &out_va_rating, &out_watt_rating, &batt_rating, &batt_recharge_voltage, &batt_under_voltage, &batt_bulk_voltage, &batt_float_voltage, &batt_type, &max_grid_charge_current, &max_charge_current, &in_voltage_range, &out_source_priority, &charger_source_priority, &machine_type, &topology, &out_mode, &batt_redischarge_voltage);
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+socat pty,link=/dev/ttyS6,b2400,cstopb=0,csize=cs8,raw,echo=0 tcp:192.168.0.73:23 & export APP_PID=$!
 INFLUX_ENABLED=`cat /etc/inverter/mqtt.json | jq '.influx.enabled' -r`
 
 pushMQTTData () {
@@ -140,3 +141,4 @@ Battery_redischarge_voltage=`echo $INVERTER_DATA | jq '.Battery_redischarge_volt
 Warnings=`echo $INVERTER_DATA | jq '.Warnings' -r`
 [ ! -z "$Warnings" ] && pushMQTTData "Warnings" "$Warnings"
 
+kill $APP_PID
