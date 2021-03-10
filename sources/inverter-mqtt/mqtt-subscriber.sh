@@ -39,7 +39,7 @@ do
 
     echo "Incoming request send: [$rawcmd] to inverter."
     echo "Incoming request send: Waiting for Serial Port"
-    for VARIABLE in 1 2 3 4 5 .. N
+    for VARIABLE in 1 2 3 4 5 N
     do
         APP_PID_SUB=`ps -ef | grep [s]ocat  | awk '{ print $2 }' | awk -v def="default" '{print} END { if(NR==0) {print 123123123} }'`
         timeout 10 tail --pid=$APP_PID_SUB -f /dev/null
