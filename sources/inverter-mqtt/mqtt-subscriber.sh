@@ -39,15 +39,24 @@ do
 
     echo "Incoming request send: [$rawcmd] to inverter."
     echo "Incoming request send: Waiting for Serial Port"
-    APP_PID_SUB=`ps -ef | grep [s]ocat  | awk '{ print $2 }' | awk -v def="default" '{print} END { if(NR==0) {print 123123123} }'`
-    timeout 10 tail --pid=$APP_PID_SUB -f /dev/null
-    APP_PID_SUB=`ps -ef | grep [s]ocat  | awk '{ print $2 }' | awk -v def="default" '{print} END { if(NR==0) {print 123123123} }'`
-    timeout 10 tail --pid=$APP_PID_SUB -f /dev/null
-    echo "Incoming request send: Serial Port Available"
-    socat pty,link=/dev/ttyS6,b2400,cstopb=0,csize=cs8,raw,echo=0 tcp:192.168.0.73:23 & export APP_PID=$!
-    INVERTER_DATA=`timeout 10 /opt/inverter-cli/bin/inverter_poller -r $rawcmd`
-    Reply=`echo $INVERTER_DATA | cut -d':' -f2 | sed -e 's/^[[:space:]]*//'`
-    [ ! -z "$Reply" ] && pushMQTTData "Reply" "$Reply ($rawcmd)"
-    kill $APP_PID
+    for VARIABLE in 1 2 3 4 5 .. N
+    do
+        APP_PID_SUB=`ps -ef | grep [s]ocat  | awk '{ print $2 }' | awk -v def="default" '{print} END { if(NR==0) {print 123123123} }'`
+        timeout 10 tail --pid=$APP_PID_SUB -f /dev/null
+        APP_PID_SUB=`ps -ef | grep [s]ocat  | awk '{ print $2 }' | awk -v def="default" '{print} END { if(NR==0) {print 123123123} }'`
+        timeout 10 tail --pid=$APP_PID_SUB -f /dev/null
+        echo "Incoming request send: Serial Port Available"
+        socat pty,link=/dev/ttyS6,b2400,cstopb=0,csize=cs8,raw,echo=0 tcp:192.168.0.73:23 & export APP_PID=$!
+        INVERTER_DATA=`timeout 10 /opt/inverter-cli/bin/inverter_poller -r $rawcmd`
+        echo "INVERTER_DATA: $INVERTER_DATA"
+        Reply=`echo $INVERTER_DATA | cut -d':' -f2 | sed -e 's/^[[:space:]]*//'`
+        echo "Reply: $Reply"
+        [ ! -z "$Reply" ] && pushMQTTData "Reply" "$Reply ($rawcmd)"
+        kill $APP_PID
+        if [ -n "${Reply}" ]; then
+            break
+        fi
+    done
+
 
 done < <(mosquitto_sub -h $MQTT_SERVER -p $MQTT_PORT -u "$MQTT_USERNAME" -P "$MQTT_PASSWORD" -t "$MQTT_TOPIC/sensor/$MQTT_DEVICENAME" -q 1)
