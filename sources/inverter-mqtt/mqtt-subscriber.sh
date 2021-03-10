@@ -39,12 +39,14 @@ do
 
     echo "Incoming request send: [$rawcmd] to inverter."
     echo "Incoming request send: Waiting for Serial Port"
-    timeout $timeout tail --pid=$APP_PID -f /dev/null
-    timeout $timeout tail --pid=$APP_PID -f /dev/null
+    APP_PID_SUB=`ps -ef | grep [s]ocat  | awk '{ print $2 }' | awk -v def="default" '{print} END { if(NR==0) {print 123123123} }'`
+    timeout 10 tail --pid=$APP_PID_SUB -f /dev/null
+    APP_PID_SUB=`ps -ef | grep [s]ocat  | awk '{ print $2 }' | awk -v def="default" '{print} END { if(NR==0) {print 123123123} }'`
+    timeout 10 tail --pid=$APP_PID_SUB -f /dev/null
     echo "Incoming request send: Serial Port Available"
     socat pty,link=/dev/ttyS6,b2400,cstopb=0,csize=cs8,raw,echo=0 tcp:192.168.0.73:23 & export APP_PID=$!
     INVERTER_DATA=`timeout 10 /opt/inverter-cli/bin/inverter_poller -r $rawcmd`
-    Reply=`echo $INVERTER_DATA | jq '.Reply' -r`
+    Reply=`echo $INVERTER_DATA | cut -d':' -f2 | sed -e 's/^[[:space:]]*//'`
     [ ! -z "$Reply" ] && pushMQTTData "Reply" "$Reply ($rawcmd)"
     kill $APP_PID
 
