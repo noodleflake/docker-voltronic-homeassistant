@@ -33,14 +33,15 @@ pushInfluxData () {
     curl -i -XPOST "$INFLUX_HOST/write?db=$INFLUX_DATABASE&precision=s" -u "$INFLUX_USERNAME:$INFLUX_PASSWORD" --data-binary "$INFLUX_PREFIX,device=$INFLUX_DEVICE $INFLUX_MEASUREMENT_NAME=$2"
 }
 
-while read rawcmd;
+rawcmd=""
+while [ "${rawcmd}" != "exit" ];
 do
-
-    echo "Incoming request send: [$rawcmd] to inverter."
-    echo "Incoming request send: Waiting for Serial Port"
+    rawcmd=`timeout 1 mosquitto_sub -h $MQTT_SERVER -p $MQTT_PORT -u "$MQTT_USERNAME" -P "$MQTT_PASSWORD" -t "$MQTT_TOPIC/sensor/$MQTT_DEVICENAME" -q 1`
     if [ -z "${rawcmd}" ]; then
         continue
     fi
+    echo "Incoming request send: [$rawcmd] to inverter."
+    echo "Incoming request send: Waiting for Serial Port"
     for VARIABLE in 1 2 3 4 5 N
     do
         APP_PID_SUB=`ps -ef | grep [s]ocat  | awk '{ print $2 }' | awk -v def="default" '{print} END { if(NR==0) {print 123123123} }'`
@@ -57,4 +58,4 @@ do
             break
         fi
     done
-done < <(timeout 60 mosquitto_sub -h $MQTT_SERVER -p $MQTT_PORT -u "$MQTT_USERNAME" -P "$MQTT_PASSWORD" -t "$MQTT_TOPIC/sensor/$MQTT_DEVICENAME" -q 1)
+done
