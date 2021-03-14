@@ -9,7 +9,7 @@ export TERM=xterm
 watch -n 300 /opt/inverter-mqtt/mqtt-init.sh > /dev/null 2>&1 &
 
 # Run the MQTT Subscriber process in the background (so that way we can change the configuration on the inverter from home assistant)
-/opt/inverter-mqtt/mqtt-subscriber.sh &
+watch -n 60 /opt/inverter-mqtt/mqtt-subscriber.sh &
 
 # execute exactly every 30 seconds...
 watch -n 1 /opt/inverter-mqtt/mqtt-push.sh > /dev/null 2>&1

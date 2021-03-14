@@ -5,7 +5,7 @@ MQTT_TOPIC=`cat /etc/inverter/mqtt.json | jq '.topic' -r`
 MQTT_DEVICENAME=`cat /etc/inverter/mqtt.json | jq '.devicename' -r`
 MQTT_USERNAME=`cat /etc/inverter/mqtt.json | jq '.username' -r`
 MQTT_PASSWORD=`cat /etc/inverter/mqtt.json | jq '.password' -r`
-	
+
 INFLUX_ENABLED=`cat /etc/inverter/mqtt.json | jq '.influx.enabled' -r`
 pushMQTTData () {
     mosquitto_pub \
@@ -38,10 +38,11 @@ do
 
     echo "Incoming request send: [$rawcmd] to inverter."
     echo "Incoming request send: Waiting for Serial Port"
+    if [ -z "${rawcmd}" ]; then
+        continue
+    fi
     for VARIABLE in 1 2 3 4 5 N
     do
-        APP_PID_SUB=`ps -ef | grep [s]ocat  | awk '{ print $2 }' | awk -v def="default" '{print} END { if(NR==0) {print 123123123} }'`
-        timeout 10 tail --pid=$APP_PID_SUB -f /dev/null
         APP_PID_SUB=`ps -ef | grep [s]ocat  | awk '{ print $2 }' | awk -v def="default" '{print} END { if(NR==0) {print 123123123} }'`
         timeout 10 tail --pid=$APP_PID_SUB -f /dev/null
         echo "Incoming request send: Serial Port Available"
@@ -56,6 +57,4 @@ do
             break
         fi
     done
-
-
-done < <(mosquitto_sub -h $MQTT_SERVER -p $MQTT_PORT -u "$MQTT_USERNAME" -P "$MQTT_PASSWORD" -t "$MQTT_TOPIC/sensor/$MQTT_DEVICENAME" -q 1)
+done < <(timeout 60 mosquitto_sub -h $MQTT_SERVER -p $MQTT_PORT -u "$MQTT_USERNAME" -P "$MQTT_PASSWORD" -t "$MQTT_TOPIC/sensor/$MQTT_DEVICENAME" -q 1)
